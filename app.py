@@ -150,11 +150,6 @@ elif page == "Past Analyses":
     if st.session_state.past_analyses:
         for i, analysis in enumerate(st.session_state.past_analyses):
             st.subheader(f"{i+1}. {analysis['type']}")
-            if analysis.get("file") and input_type != "Text Query":
-                if analysis["type"] == "Image":
-                    st.image(save_temp_file(uploaded_file), width=200)
-                elif analysis["type"] == "Video":
-                    st.video(save_temp_file(uploaded_file))
             if analysis.get("query"):
                 st.markdown(f"*Query:* {analysis['query']}")
             st.markdown(f"*Result:* {analysis['result']}")
