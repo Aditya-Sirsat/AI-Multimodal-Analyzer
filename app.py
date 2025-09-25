@@ -18,6 +18,38 @@ st.set_page_config(page_title="Agentic AI Multimodal Analyzer", layout="wide")
 st.title("Agentic AI Multimodal Analyzer")
 st.markdown("AI agent capable of deciding actions and analyzing multimedia using Gemini API")
 
+# Session state for memory
+if "past_analyses" not in st.session_state:
+    st.session_state.past_analyses = []
+
+# Helper functions
+def save_temp_file(uploaded_file):
+    if uploaded_file:
+        suffix = f".{uploaded_file.name.split('.')[-1]}"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(uploaded_file.getbuffer())
+            return tmp.name
+    return None
+
+def transcribe_audio(video_path):
+    audio_path = video_path + "_audio.wav"
+    subprocess.run(
+        ['ffmpeg', '-i', video_path, '-ac', '1', '-ar', '16000', audio_path, '-y'],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    recognizer = sr.Recognizer()
+    transcription = ""
+    try:
+        with sr.AudioFile(audio_path) as source:
+            audio = recognizer.record(source)
+            transcription = recognizer.recognize_google(audio)
+    except Exception as e:
+        transcription = f"Transcribe Failed: {e}"
+    finally:
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+    return transcription
+
 # Sidebar Navigation
 st.sidebar.title("Navigate")
 page = st.sidebar.radio("Go to", ["Agentic Analysis", "Past Analyses"])
