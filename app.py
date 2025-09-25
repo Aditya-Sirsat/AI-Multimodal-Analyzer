@@ -50,6 +50,51 @@ def transcribe_audio(video_path):
             os.remove(audio_path)
     return transcription
 
+def analyze_content(prompt, image_path=None, transcription=None):
+    content = prompt
+    if transcription:
+        content += f"\n\nTranscription: {transcription}"
+
+    try:
+        if image_path:
+            with open(image_path, "rb") as img:
+                response = model.generate_content(
+                    [content, {"mime_type": "image/jpeg", "data": img.read()}]
+                )
+        else:
+            response = model.generate_content(content)
+        return response.text
+    except Exception as e:
+        return f"Analysis Failed: {e}"
+
+def analyze_video_frames(video_path, transcription):
+    cap = cv2.VideoCapture(video_path)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    frame_interval = fps  # 1 frame per second
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    duration = frame_count / fps if fps else 0
+
+    analyses = []
+    i = 0
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if i % frame_interval == 0:  # sample every second
+            temp_frame = f"{video_path}frame{i}.jpg"
+            cv2.imwrite(temp_frame, frame)
+            result = analyze_content("Analyze this frame of the video.", image_path=temp_frame)
+            analyses.append(result)
+            os.remove(temp_frame)
+        i += 1
+    cap.release()
+
+    final_summary = analyze_content(
+        f"Summarize the following frame analyses into a cohesive video analysis:\n\n{analyses}",
+        transcription=transcription
+    )
+    return final_summary, duration, len(analyses)
+
 # Sidebar Navigation
 st.sidebar.title("Navigate")
 page = st.sidebar.radio("Go to", ["Agentic Analysis", "Past Analyses"])
