@@ -95,6 +95,29 @@ def analyze_video_frames(video_path, transcription):
     )
     return final_summary, duration, len(analyses)
 
+def perform_web_search(query):
+    results = search_tool.run(query)
+    prompt = f"Web Search results for '{query}': \n {results}\n\nProvide a comprehensive analysis."
+    return analyze_content(prompt)
+
+# Agent function
+def agent(query, uploaded_file=None, file_type=None):
+    # Decide action
+    if file_type == "image":
+        path = save_temp_file(uploaded_file)
+        analysis = analyze_content("Analyze this image in detail.", image_path=path)
+        st.image(path, width=400)
+        return analysis
+    elif file_type == "video":
+        path = save_temp_file(uploaded_file)
+        transcription = transcribe_audio(path)
+        result, duration, frames = analyze_video_frames(path, transcription)
+        st.video(path)
+        st.markdown(f"Transcription: {transcription}")
+        return result
+    else:
+        return perform_web_search(query)
+
 # Sidebar Navigation
 st.sidebar.title("Navigate")
 page = st.sidebar.radio("Go to", ["Agentic Analysis", "Past Analyses"])
